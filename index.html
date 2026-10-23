@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repeatle - The Daily Pattern Memory Game</title>
+    <title>Flashback - The Daily Pattern Memory Game</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -117,7 +117,7 @@
             border-color: #ef4444 !important;
         }
 
-        .repeatle-glow {
+        .Flashback-glow {
             text-shadow: 0 0 16px rgba(0, 240, 255, 0.6), 0 0 30px rgba(139, 92, 246, 0.4);
         }
 
@@ -150,8 +150,8 @@
 
             <!-- Main Title Branding -->
             <div class="text-center">
-                <h1 class="font-orbitron font-black text-3xl md:text-4xl tracking-widest text-white repeatle-glow">
-                    REPEATLE
+                <h1 class="font-orbitron font-black text-3xl md:text-4xl tracking-widest text-white Flashback-glow">
+                    Flashback
                 </h1>
             </div>
 
@@ -219,7 +219,7 @@
         <!-- Banner Message -->
         <div id="statusBanner" class="w-full glass-panel rounded-xl py-2 px-4 text-center transition-all duration-300">
             <p id="statusText" class="font-semibold text-xs md:text-sm text-slate-300 tracking-wide">
-                Press <span class="text-cyber-emerald font-bold">START REPEATLE</span> to begin!
+                Press <span class="text-cyber-emerald font-bold">START Flashback</span> to begin!
             </p>
         </div>
 
@@ -239,7 +239,7 @@
         <!-- Action Control Buttons -->
         <div class="w-full flex gap-2.5">
             <button id="startBtn" class="w-full py-3.5 rounded-xl font-orbitron font-bold text-base tracking-widest text-slate-950 bg-gradient-to-r from-cyber-emerald via-cyber-accent to-cyber-emerald hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-cyber-emerald/20">
-                START REPEATLE
+                START Flashback
             </button>
             <button id="repeatBtn" class="hidden py-3.5 px-4 rounded-xl font-orbitron font-semibold text-xs text-cyber-accent glass-panel hover:bg-cyber-accent/10 active:scale-[0.98] transition-all border-cyber-accent/30 flex items-center justify-center gap-2 shrink-0">
                 <i class="fa-solid fa-rotate-right"></i>
@@ -290,7 +290,7 @@
                 </li>
                 <li class="flex items-start gap-2.5">
                     <i class="fa-solid fa-earth-americas text-cyber-violet text-sm mt-0.5"></i>
-                    <span>Everyone around the world gets the exact same Daily Repeatle!</span>
+                    <span>Everyone around the world gets the exact same Daily Flashback!</span>
                 </li>
             </ul>
 
@@ -306,7 +306,7 @@
             <button id="closeStatsBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
-            <h3 class="font-orbitron font-extrabold text-xl text-white mb-4 text-center">REPEATLE STATS</h3>
+            <h3 class="font-orbitron font-extrabold text-xl text-white mb-4 text-center">Flashback STATS</h3>
             
             <div class="grid grid-cols-4 gap-2 mb-5 text-center">
                 <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
@@ -335,7 +335,7 @@
 
             <!-- Countdown to Next Daily -->
             <div class="text-center bg-slate-900/50 rounded-2xl p-3 border border-slate-800/80">
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">NEXT REPEATLE IN</div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">NEXT Flashback IN</div>
                 <div id="nextCountdown" class="font-orbitron font-extrabold text-lg text-cyber-accent tracking-widest">
                     --:--:--
                 </div>
@@ -351,7 +351,7 @@
                 <i class="fa-solid fa-trophy text-3xl text-amber-300 animate-bounce"></i>
             </div>
 
-            <h2 id="modalTitle" class="font-orbitron font-black text-2xl text-white tracking-wider mb-0.5">REPEATLE CLEARED!</h2>
+            <h2 id="modalTitle" class="font-orbitron font-black text-2xl text-white tracking-wider mb-0.5">Flashback CLEARED!</h2>
             <p id="modalSub" class="text-xs text-cyber-emerald mb-4 font-semibold uppercase tracking-wider">Daily Pattern Completed</p>
 
             <!-- Final Performance Summary -->
@@ -374,7 +374,7 @@
 
             <!-- Next Daily Countdown in Modal -->
             <div class="bg-slate-900/50 rounded-xl p-2.5 border border-slate-800/80 mb-4 text-center">
-                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Next Repeatle Unlocks In</div>
+                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Next Flashback Unlocks In</div>
                 <div id="modalCountdown" class="font-orbitron font-bold text-sm text-cyber-accent tracking-widest">--:--:--</div>
             </div>
 
@@ -406,8 +406,8 @@
             FLASH_INTERVAL: 180,
             EPOCH_START_DATE: '2025-01-01',
             STORAGE_KEYS: {
-                STATS: 'repeatle_stats_v1',
-                COMPLETED: 'repeatle_completed_dailies_v1'
+                STATS: 'Flashback_stats_v1',
+                COMPLETED: 'Flashback_completed_dailies_v1'
             }
         };
 
@@ -556,7 +556,7 @@
         }
 
         function generateDailySequence(dateStr) {
-            const seed = stringToSeed('repeatle_' + dateStr);
+            const seed = stringToSeed('Flashback_' + dateStr);
             const rng = mulberry32(seed);
             const seq = [];
             let lastTile = -1;
@@ -675,7 +675,7 @@
         function checkDailyStatus() {
             const todayCompleted = state.completedDailies[state.todayDateStr];
             if (todayCompleted && state.mode === 'DAILY') {
-                updateStatus('Repeatle completed for today!', 'text-cyber-emerald');
+                updateStatus('Flashback completed for today!', 'text-cyber-emerald');
                 startBtn.textContent = 'DAILY COMPLETED ✔';
                 startBtn.classList.remove('from-cyber-emerald', 'via-cyber-accent', 'to-cyber-emerald');
                 startBtn.classList.add('bg-slate-800', 'text-slate-400', 'pointer-events-none', 'shadow-none');
@@ -892,8 +892,8 @@
                 saveCompletedDaily(state.todayDateStr, { timeMs, retries });
                 updateStreakAndBestUI();
 
-                modalTitle.textContent = "REPEATLE CLEARED!";
-                modalSub.textContent = `Daily Repeatle #${state.dailyNumber} Completed`;
+                modalTitle.textContent = "Flashback CLEARED!";
+                modalSub.textContent = `Daily Flashback #${state.dailyNumber} Completed`;
                 modalStreakRow.classList.remove('hidden');
                 modalStreakVal.textContent = state.stats.streak;
             } else {
@@ -952,9 +952,9 @@
             let shareText = '';
 
             if (state.mode === 'DAILY') {
-                shareText += `Repeatle #${state.dailyNumber} 🧠⚡\n`;
+                shareText += `Flashback #${state.dailyNumber} 🧠⚡\n`;
             } else {
-                shareText += `Repeatle Practice 🧠⚡\n`;
+                shareText += `Flashback Practice 🧠⚡\n`;
             }
 
             shareText += `⏱️ Time: ${timeSeconds}s\n`;
@@ -975,8 +975,8 @@
             }
             shareText += `${emojiPattern}\n`;
 
-            const currentUrl = window.location.href.startsWith('http') ? window.location.href : 'https://repeatle.game';
-            shareText += `Play Repeatle: ${currentUrl}`;
+            const currentUrl = window.location.href.startsWith('http') ? window.location.href : 'https://Flashback.game';
+            shareText += `Play Flashback: ${currentUrl}`;
 
             return shareText;
         }
@@ -1045,7 +1045,7 @@
             if (state.mode === 'PRACTICE') {
                 modeBadge.textContent = 'PRACTICE MODE';
                 modeBadge.className = 'text-[11px] font-orbitron font-bold px-2.5 py-1 rounded-lg bg-cyber-violet/20 border border-cyber-violet/40 text-cyber-violet';
-                practiceToggleBtn.textContent = 'Switch to Daily Repeatle';
+                practiceToggleBtn.textContent = 'Switch to Daily Flashback';
                 startBtn.textContent = 'START PRACTICE';
                 startBtn.className = 'w-full py-3.5 rounded-xl font-orbitron font-bold text-base tracking-widest text-slate-950 bg-gradient-to-r from-cyber-emerald via-cyber-accent to-cyber-emerald hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-cyber-emerald/20';
                 updateStatus('Practice Mode: Unlimited random sequences', 'text-slate-300');
@@ -1053,7 +1053,7 @@
                 modeBadge.innerHTML = `DAILY #<span id="dailyNumTag">${state.dailyNumber}</span>`;
                 modeBadge.className = 'text-[11px] font-orbitron font-bold px-2.5 py-1 rounded-lg bg-cyber-emerald/15 border border-cyber-emerald/40 text-cyber-emerald';
                 practiceToggleBtn.textContent = 'Switch to Practice Mode';
-                startBtn.textContent = 'START REPEATLE';
+                startBtn.textContent = 'START Flashback';
                 checkDailyStatus();
             }
         }
