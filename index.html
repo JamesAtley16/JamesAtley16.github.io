@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repeatle - The Daily Pattern Memory Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            dark: '#07090e',
+                            card: '#111726',
+                            accent: '#00f0ff',
+                            emerald: '#10b981',
+                            violet: '#8b5cf6',
+                            pink: '#ec4899',
+                            danger: '#ef4444',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #06080e;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.18) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.08) 0%, transparent 60%);
+            background-attachment: fixed;
+            font-family: 'Rajdhani', sans-serif;
+            color: #f1f5f9;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(17, 23, 38, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        /* Grid Tile Styling */
+        .grid-tile {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 1.25rem;
+            background: rgba(22, 32, 50, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.12s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .grid-tile::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, var(--glow-color, rgba(255,255,255,0.2)) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+
+        .grid-tile:active:not(.disabled) {
+            transform: scale(0.94);
+        }
+
+        .tile-0 { --glow-color: #f43f5e; --border-active: #f43f5e; }
+        .tile-1 { --glow-color: #f97316; --border-active: #f97316; }
+        .tile-2 { --glow-color: #eab308; --border-active: #eab308; }
+        .tile-3 { --glow-color: #10b981; --border-active: #10b981; }
+        .tile-4 { --glow-color: #00f0ff; --border-active: #00f0ff; }
+        .tile-5 { --glow-color: #3b82f6; --border-active: #3b82f6; }
+        .tile-6 { --glow-color: #8b5cf6; --border-active: #8b5cf6; }
+        .tile-7 { --glow-color: #d946ef; --border-active: #d946ef; }
+        .tile-8 { --glow-color: #f43f5e; --border-active: #f43f5e; }
+
+        .grid-tile.active {
+            border-color: var(--border-active);
+            box-shadow: 0 0 35px var(--border-active), inset 0 0 20px var(--border-active);
+            transform: scale(0.97);
+        }
+
+        .grid-tile.active::before {
+            opacity: 1;
+        }
+
+        /* Shake animation on mistake */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-9px); }
+            40%, 80% { transform: translateX(9px); }
+        }
+
+        .shake-grid {
+            animation: shake 0.38s cubic-bezier(.36,.07,.19,.97) both;
+            border-color: #ef4444 !important;
+        }
+
+        .repeatle-glow {
+            text-shadow: 0 0 16px rgba(0, 240, 255, 0.6), 0 0 30px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Toast Animation */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translate(-50%, 20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .animate-toast {
+            animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass-panel px-5 py-3 rounded-xl border-cyber-accent/40 shadow-xl shadow-cyber-accent/10 flex items-center gap-2.5 text-white font-semibold text-sm opacity-0 pointer-events-none transition-all">
+        <i class="fa-solid fa-circle-check text-cyber-emerald text-lg"></i>
+        <span id="toastMsg">Copied to clipboard!</span>
+    </div>
+
+    <!-- Header Section -->
+    <header class="w-full max-w-md flex flex-col items-center mt-1 mb-3">
+        <div class="w-full flex items-center justify-between mb-1">
+            <!-- Left Info Icon or Practice Badge -->
+            <button id="infoToggleBtn" class="glass-panel w-10 h-10 rounded-xl text-slate-300 hover:text-white hover:border-cyber-accent/50 transition-all flex items-center justify-center">
+                <i class="fa-solid fa-circle-info text-base"></i>
+            </button>
+
+            <!-- Main Title Branding -->
+            <div class="text-center">
+                <h1 class="font-orbitron font-black text-3xl md:text-4xl tracking-widest text-white repeatle-glow">
+                    REPEATLE
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Stats Modal Button -->
+                <button id="statsToggle" class="glass-panel w-10 h-10 rounded-xl text-slate-300 hover:text-white hover:border-cyber-accent/50 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-chart-column text-base"></i>
+                </button>
+                <!-- Sound Toggle -->
+                <button id="soundToggle" class="glass-panel w-10 h-10 rounded-xl text-slate-300 hover:text-white hover:border-cyber-accent/50 transition-all flex items-center justify-center">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-cyber-accent"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tagline -->
+        <p class="text-xs md:text-sm font-bold uppercase tracking-widest text-cyber-accent/90 mt-0.5">
+            The Daily Pattern Memory Game
+        </p>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-md flex flex-col items-center gap-3.5 my-auto">
+        
+        <!-- Mode Selector & Date Info -->
+        <div class="w-full flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+                <span id="modeBadge" class="text-[11px] font-orbitron font-bold px-2.5 py-1 rounded-lg bg-cyber-emerald/15 border border-cyber-emerald/40 text-cyber-emerald">
+                    DAILY #<span id="dailyNumTag">--</span>
+                </span>
+                <span id="dateDisplay" class="text-xs text-slate-400 font-semibold">----/--/--</span>
+            </div>
+            <button id="practiceToggleBtn" class="text-xs font-semibold text-slate-400 hover:text-cyber-accent underline underline-offset-4 transition-colors">
+                Switch to Practice Mode
+            </button>
+        </div>
+
+        <!-- Timer & Step Display Panel -->
+        <div class="w-full glass-panel rounded-2xl p-4 flex items-center justify-between border-slate-800">
+            <!-- Timer Display -->
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Elapsed Time</span>
+                <div id="timerDisplay" class="font-orbitron font-extrabold text-2xl md:text-3xl text-cyber-accent tracking-widest">
+                    00:00.<span class="text-lg md:text-xl text-cyber-accent/70">00</span>
+                </div>
+            </div>
+
+            <!-- Steps & Retries Counter -->
+            <div class="flex items-center gap-5 text-right">
+                <div>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Step</span>
+                    <div id="progressDisplay" class="font-orbitron font-bold text-lg md:text-xl text-white">
+                        <span id="currentStep">0</span>/<span id="totalSteps">8</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Retries</span>
+                    <div id="attemptsDisplay" class="font-orbitron font-bold text-lg md:text-xl text-cyber-pink">
+                        0
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner Message -->
+        <div id="statusBanner" class="w-full glass-panel rounded-xl py-2 px-4 text-center transition-all duration-300">
+            <p id="statusText" class="font-semibold text-xs md:text-sm text-slate-300 tracking-wide">
+                Press <span class="text-cyber-emerald font-bold">START REPEATLE</span> to begin!
+            </p>
+        </div>
+
+        <!-- 3x3 Grid Container -->
+        <div id="gridContainer" class="w-full glass-panel p-3.5 md:p-4 rounded-3xl grid grid-cols-3 gap-3 md:gap-3.5 relative transition-all duration-300 border-slate-800">
+            <button data-index="0" class="grid-tile tile-0 flex items-center justify-center disabled"></button>
+            <button data-index="1" class="grid-tile tile-1 flex items-center justify-center disabled"></button>
+            <button data-index="2" class="grid-tile tile-2 flex items-center justify-center disabled"></button>
+            <button data-index="3" class="grid-tile tile-3 flex items-center justify-center disabled"></button>
+            <button data-index="4" class="grid-tile tile-4 flex items-center justify-center disabled"></button>
+            <button data-index="5" class="grid-tile tile-5 flex items-center justify-center disabled"></button>
+            <button data-index="6" class="grid-tile tile-6 flex items-center justify-center disabled"></button>
+            <button data-index="7" class="grid-tile tile-7 flex items-center justify-center disabled"></button>
+            <button data-index="8" class="grid-tile tile-8 flex items-center justify-center disabled"></button>
+        </div>
+
+        <!-- Action Control Buttons -->
+        <div class="w-full flex gap-2.5">
+            <button id="startBtn" class="w-full py-3.5 rounded-xl font-orbitron font-bold text-base tracking-widest text-slate-950 bg-gradient-to-r from-cyber-emerald via-cyber-accent to-cyber-emerald hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-cyber-emerald/20">
+                START REPEATLE
+            </button>
+            <button id="repeatBtn" class="hidden py-3.5 px-4 rounded-xl font-orbitron font-semibold text-xs text-cyber-accent glass-panel hover:bg-cyber-accent/10 active:scale-[0.98] transition-all border-cyber-accent/30 flex items-center justify-center gap-2 shrink-0">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span class="hidden sm:inline">Replay</span>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer Stats Strip -->
+    <footer class="w-full max-w-md mt-3 mb-1">
+        <div class="glass-panel rounded-2xl p-3 px-5 flex items-center justify-around text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
+                <span class="font-semibold text-slate-300">Streak:</span>
+                <span id="streakDisplay" class="font-orbitron font-bold text-white">0</span>
+            </div>
+            <div class="h-3.5 w-px bg-slate-800"></div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-trophy text-cyber-accent text-sm"></i>
+                <span class="font-semibold text-slate-300">Best Time:</span>
+                <span id="bestTimeDisplay" class="font-orbitron font-bold text-cyber-emerald">--:--.--</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Instructions / Info Modal -->
+    <div id="infoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 border-slate-700 shadow-2xl relative">
+            <button id="closeInfoBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-orbitron font-extrabold text-xl text-white mb-2 text-center">HOW TO PLAY</h3>
+            <p class="text-xs text-cyber-accent text-center font-bold uppercase tracking-wider mb-4">Memorize & Repeat</p>
+
+            <ul class="space-y-3 text-xs text-slate-300 font-medium mb-6">
+                <li class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-eye text-cyber-accent text-sm mt-0.5"></i>
+                    <span>Watch the 3x3 grid tiles light up in a distinct sequence.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-hand-pointer text-cyber-emerald text-sm mt-0.5"></i>
+                    <span>Repeat the pattern step by step once demonstration ends.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-arrows-rotate text-cyber-pink text-sm mt-0.5"></i>
+                    <span>Mistake? The sequence resets from step 1, but your <strong>time continues running</strong>!</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-earth-americas text-cyber-violet text-sm mt-0.5"></i>
+                    <span>Everyone around the world gets the exact same Daily Repeatle!</span>
+                </li>
+            </ul>
+
+            <button id="gotItBtn" class="w-full py-3 rounded-xl font-orbitron font-bold text-xs tracking-wider text-slate-950 bg-cyber-accent hover:brightness-110 active:scale-[0.98] transition-all">
+                GOT IT!
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 border-slate-700 shadow-2xl relative">
+            <button id="closeStatsBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-orbitron font-extrabold text-xl text-white mb-4 text-center">REPEATLE STATS</h3>
+            
+            <div class="grid grid-cols-4 gap-2 mb-5 text-center">
+                <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                    <div id="statPlayed" class="font-orbitron font-extrabold text-lg text-white">0</div>
+                    <div class="text-[9px] text-slate-400 font-semibold uppercase mt-1">Played</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                    <div id="statWinPct" class="font-orbitron font-extrabold text-lg text-cyber-emerald">100%</div>
+                    <div class="text-[9px] text-slate-400 font-semibold uppercase mt-1">Win %</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                    <div id="statStreak" class="font-orbitron font-extrabold text-lg text-amber-400">0</div>
+                    <div class="text-[9px] text-slate-400 font-semibold uppercase mt-1">Streak</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                    <div id="statMaxStreak" class="font-orbitron font-extrabold text-lg text-cyber-violet">0</div>
+                    <div class="text-[9px] text-slate-400 font-semibold uppercase mt-1">Max</div>
+                </div>
+            </div>
+
+            <!-- Best Daily Record -->
+            <div class="bg-slate-900/80 rounded-2xl p-3 border border-slate-800 flex items-center justify-between mb-5">
+                <span class="text-xs text-slate-400 font-semibold uppercase">Personal Record</span>
+                <span id="statBest" class="font-orbitron font-bold text-sm text-cyber-emerald">--:--.--</span>
+            </div>
+
+            <!-- Countdown to Next Daily -->
+            <div class="text-center bg-slate-900/50 rounded-2xl p-3 border border-slate-800/80">
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">NEXT REPEATLE IN</div>
+                <div id="nextCountdown" class="font-orbitron font-extrabold text-lg text-cyber-accent tracking-widest">
+                    --:--:--
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Overlay Modal -->
+    <div id="victoryModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center border-cyber-accent/30 shadow-2xl shadow-cyber-accent/20 transform scale-95 transition-transform duration-300" id="victoryContent">
+            
+            <div class="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-cyber-emerald/20 to-cyber-violet/20 border border-cyber-emerald/40 flex items-center justify-center shadow-lg shadow-cyber-emerald/30">
+                <i class="fa-solid fa-trophy text-3xl text-amber-300 animate-bounce"></i>
+            </div>
+
+            <h2 id="modalTitle" class="font-orbitron font-black text-2xl text-white tracking-wider mb-0.5">REPEATLE CLEARED!</h2>
+            <p id="modalSub" class="text-xs text-cyber-emerald mb-4 font-semibold uppercase tracking-wider">Daily Pattern Completed</p>
+
+            <!-- Final Performance Summary -->
+            <div class="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 space-y-2 mb-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span class="text-slate-400 text-xs font-semibold uppercase">Total Time</span>
+                    <span id="modalFinalTime" class="font-orbitron font-extrabold text-xl text-cyber-accent">00:00.00</span>
+                </div>
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span class="text-slate-400 text-xs font-semibold uppercase">Retries</span>
+                    <span id="modalAttempts" class="font-orbitron font-extrabold text-base text-cyber-pink">0</span>
+                </div>
+                <div id="modalStreakRow" class="flex items-center justify-between">
+                    <span class="text-slate-400 text-xs font-semibold uppercase">Daily Streak</span>
+                    <span class="font-orbitron font-bold text-xs text-amber-400 flex items-center gap-1">
+                        <i class="fa-solid fa-fire"></i> <span id="modalStreakVal">1</span> day(s)
+                    </span>
+                </div>
+            </div>
+
+            <!-- Next Daily Countdown in Modal -->
+            <div class="bg-slate-900/50 rounded-xl p-2.5 border border-slate-800/80 mb-4 text-center">
+                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Next Repeatle Unlocks In</div>
+                <div id="modalCountdown" class="font-orbitron font-bold text-sm text-cyber-accent tracking-widest">--:--:--</div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-2">
+                <!-- WhatsApp Share Button -->
+                <button id="whatsappShareBtn" class="w-full py-3.5 rounded-xl font-orbitron font-bold text-xs tracking-wider text-slate-950 bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all shadow-lg shadow-[#25D366]/25 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> SHARE ON WHATSAPP
+                </button>
+                <!-- Copy Results Button -->
+                <button id="shareBtn" class="w-full py-3 rounded-xl font-orbitron font-bold text-xs tracking-wider text-slate-950 bg-gradient-to-r from-cyber-emerald to-cyber-accent hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-cyber-emerald/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-copy text-sm"></i> COPY RESULTS
+                </button>
+                <button id="modalPracticeBtn" class="w-full py-2.5 rounded-xl font-orbitron font-semibold text-xs text-slate-300 glass-panel hover:bg-slate-800 transition-all border-slate-700">
+                    CONTINUE IN PRACTICE MODE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        /**
+         * Configuration & Constants
+         */
+        const CONFIG = {
+            SEQUENCE_LENGTH: 8, // Moderately challenging 8-step sequence
+            FLASH_DURATION: 360,
+            FLASH_INTERVAL: 180,
+            EPOCH_START_DATE: '2025-01-01',
+            STORAGE_KEYS: {
+                STATS: 'repeatle_stats_v1',
+                COMPLETED: 'repeatle_completed_dailies_v1'
+            }
+        };
+
+        // Synthesizer Harmonic Audio Frequency Table (Hz)
+        const TONE_FREQUENCIES = [
+            261.63, // C4
+            293.66, // D4
+            329.63, // E4
+            392.00, // G4
+            440.00, // A4
+            523.25, // C5
+            587.33, // D5
+            659.25, // E5
+            783.99  // G5
+        ];
+
+        // State Machine
+        const state = {
+            mode: 'DAILY', // 'DAILY' or 'PRACTICE'
+            isPlaying: false,
+            isDemonstrating: false,
+            isMuted: false,
+            sequence: [],
+            playerInputIndex: 0,
+            attempts: 0,
+            mistakesHistory: [],
+            startTime: 0,
+            elapsedTime: 0,
+            timerInterval: null,
+            countdownInterval: null,
+            todayDateStr: getTodayDateString(),
+            dailyNumber: getDailyPuzzleNumber(),
+            stats: loadStats(),
+            completedDailies: loadCompletedDailies()
+        };
+
+        let audioCtx = null;
+
+        /**
+         * Web Audio Synthesizer Engine
+         */
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, duration = 0.3, type = 'sine') {
+            if (state.isMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function playErrorSound() {
+            if (state.isMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.35);
+
+                gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.35);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function playVictorySound() {
+            if (state.isMuted || !audioCtx) return;
+            const arpeggio = [523.25, 659.25, 783.99, 1046.50];
+            arpeggio.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 0.35, 'triangle'), i * 110);
+            });
+        }
+
+        function triggerHaptic() {
+            if ("vibrate" in navigator) {
+                try {
+                    navigator.vibrate(20);
+                } catch(e) {}
+            }
+        }
+
+        /**
+         * Date and Seed Generators
+         */
+        function getTodayDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getDailyPuzzleNumber() {
+            const start = new Date(CONFIG.EPOCH_START_DATE);
+            const today = new Date(getTodayDateString());
+            const diffTime = Math.abs(today - start);
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        function mulberry32(a) {
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            }
+        }
+
+        function stringToSeed(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return hash >>> 0;
+        }
+
+        function generateDailySequence(dateStr) {
+            const seed = stringToSeed('repeatle_' + dateStr);
+            const rng = mulberry32(seed);
+            const seq = [];
+            let lastTile = -1;
+
+            for (let i = 0; i < CONFIG.SEQUENCE_LENGTH; i++) {
+                let nextTile;
+                do {
+                    nextTile = Math.floor(rng() * 9);
+                } while (nextTile === lastTile && rng() < 0.65);
+
+                seq.push(nextTile);
+                lastTile = nextTile;
+            }
+            return seq;
+        }
+
+        function generatePracticeSequence() {
+            const seq = [];
+            let lastTile = -1;
+            for (let i = 0; i < CONFIG.SEQUENCE_LENGTH; i++) {
+                let nextTile;
+                do {
+                    nextTile = Math.floor(Math.random() * 9);
+                } while (nextTile === lastTile && Math.random() < 0.65);
+                seq.push(nextTile);
+                lastTile = nextTile;
+            }
+            return seq;
+        }
+
+        /**
+         * LocalStorage Managers
+         */
+        function loadStats() {
+            const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.STATS);
+            return saved ? JSON.parse(saved) : {
+                played: 0,
+                streak: 0,
+                maxStreak: 0,
+                bestTimeMs: null,
+                lastCompletedDate: null
+            };
+        }
+
+        function saveStats() {
+            localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(state.stats));
+        }
+
+        function loadCompletedDailies() {
+            const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.COMPLETED);
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveCompletedDaily(dateStr, recordData) {
+            state.completedDailies[dateStr] = recordData;
+            localStorage.setItem(CONFIG.STORAGE_KEYS.COMPLETED, JSON.stringify(state.completedDailies));
+        }
+
+        // DOM Nodes
+        const tiles = document.querySelectorAll('.grid-tile');
+        const gridContainer = document.getElementById('gridContainer');
+        const startBtn = document.getElementById('startBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const currentStepDisplay = document.getElementById('currentStep');
+        const totalStepsDisplay = document.getElementById('totalSteps');
+        const attemptsDisplay = document.getElementById('attemptsDisplay');
+        const statusText = document.getElementById('statusText');
+        const dailyNumTag = document.getElementById('dailyNumTag');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const modeBadge = document.getElementById('modeBadge');
+        const practiceToggleBtn = document.getElementById('practiceToggleBtn');
+        const streakDisplay = document.getElementById('streakDisplay');
+        const bestTimeDisplay = document.getElementById('bestTimeDisplay');
+
+        // Modal Elements
+        const victoryModal = document.getElementById('victoryModal');
+        const victoryContent = document.getElementById('victoryContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSub = document.getElementById('modalSub');
+        const modalFinalTime = document.getElementById('modalFinalTime');
+        const modalAttempts = document.getElementById('modalAttempts');
+        const modalStreakRow = document.getElementById('modalStreakRow');
+        const modalStreakVal = document.getElementById('modalStreakVal');
+        const shareBtn = document.getElementById('shareBtn');
+        const whatsappShareBtn = document.getElementById('whatsappShareBtn');
+        const modalPracticeBtn = document.getElementById('modalPracticeBtn');
+
+        const statsModal = document.getElementById('statsModal');
+        const statsToggle = document.getElementById('statsToggle');
+        const closeStatsBtn = document.getElementById('closeStatsBtn');
+
+        const infoModal = document.getElementById('infoModal');
+        const infoToggleBtn = document.getElementById('infoToggleBtn');
+        const closeInfoBtn = document.getElementById('closeInfoBtn');
+        const gotItBtn = document.getElementById('gotItBtn');
+
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const soundToggle = document.getElementById('soundToggle');
+        const soundIcon = document.getElementById('soundIcon');
+
+        /**
+         * Initialize App
+         */
+        function initApp() {
+            totalStepsDisplay.textContent = CONFIG.SEQUENCE_LENGTH;
+            dailyNumTag.textContent = state.dailyNumber;
+            dateDisplay.textContent = state.todayDateStr;
+            
+            updateStreakAndBestUI();
+            checkDailyStatus();
+            startCountdownTimer();
+        }
+
+        function checkDailyStatus() {
+            const todayCompleted = state.completedDailies[state.todayDateStr];
+            if (todayCompleted && state.mode === 'DAILY') {
+                updateStatus('Repeatle completed for today!', 'text-cyber-emerald');
+                startBtn.textContent = 'DAILY COMPLETED ✔';
+                startBtn.classList.remove('from-cyber-emerald', 'via-cyber-accent', 'to-cyber-emerald');
+                startBtn.classList.add('bg-slate-800', 'text-slate-400', 'pointer-events-none', 'shadow-none');
+            }
+        }
+
+        function updateStreakAndBestUI() {
+            streakDisplay.textContent = state.stats.streak;
+            if (state.stats.bestTimeMs) {
+                bestTimeDisplay.textContent = formatTime(state.stats.bestTimeMs);
+            } else {
+                bestTimeDisplay.textContent = '--:--.--';
+            }
+
+            document.getElementById('statPlayed').textContent = state.stats.played;
+            document.getElementById('statStreak').textContent = state.stats.streak;
+            document.getElementById('statMaxStreak').textContent = state.stats.maxStreak;
+            document.getElementById('statBest').textContent = state.stats.bestTimeMs ? formatTime(state.stats.bestTimeMs) : '--';
+        }
+
+        function formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const hundredths = Math.floor((ms % 1000) / 10);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
+        }
+
+        /**
+         * Countdown to Next Daily Midnight
+         */
+        function startCountdownTimer() {
+            function updateCountdown() {
+                const now = new Date();
+                const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                const diff = tomorrow - now;
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.getElementById('nextCountdown').textContent = timeStr;
+                document.getElementById('modalCountdown').textContent = timeStr;
+            }
+
+            updateCountdown();
+            clearInterval(state.countdownInterval);
+            state.countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        /**
+         * Timer Logic
+         */
+        function startTimer() {
+            state.startTime = Date.now() - state.elapsedTime;
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.elapsedTime = Date.now() - state.startTime;
+                renderTimer(state.elapsedTime);
+            }, 20);
+        }
+
+        function stopTimer() {
+            clearInterval(state.timerInterval);
+        }
+
+        function resetTimer() {
+            stopTimer();
+            state.elapsedTime = 0;
+            renderTimer(0);
+        }
+
+        function renderTimer(ms) {
+            const parts = formatTime(ms).split('.');
+            timerDisplay.innerHTML = `${parts[0]}.<span class="text-lg md:text-xl text-cyber-accent/70">${parts[1]}</span>`;
+        }
+
+        /**
+         * Highlight Tile Action
+         */
+        function highlightTile(index, duration = CONFIG.FLASH_DURATION) {
+            const tile = tiles[index];
+            tile.classList.add('active');
+            playTone(TONE_FREQUENCIES[index], duration / 1000);
+
+            setTimeout(() => {
+                tile.classList.remove('active');
+            }, duration);
+        }
+
+        /**
+         * Play Pattern Demonstration
+         */
+        async function playSequence() {
+            state.isDemonstrating = true;
+            disableTiles();
+            repeatBtn.classList.add('hidden');
+            
+            updateStatus('Memorize the pattern sequence...', 'text-cyber-accent');
+
+            await new Promise(resolve => setTimeout(resolve, 450));
+
+            for (let i = 0; i < state.sequence.length; i++) {
+                if (!state.isPlaying) return;
+                highlightTile(state.sequence[i], CONFIG.FLASH_DURATION);
+                await new Promise(resolve => setTimeout(resolve, CONFIG.FLASH_DURATION + CONFIG.FLASH_INTERVAL));
+            }
+
+            state.isDemonstrating = false;
+            state.playerInputIndex = 0;
+            currentStepDisplay.textContent = '0';
+            
+            updateStatus('Your turn! Repeat the pattern.', 'text-cyber-emerald');
+            enableTiles();
+            repeatBtn.classList.remove('hidden');
+        }
+
+        function enableTiles() {
+            tiles.forEach(tile => tile.classList.remove('disabled'));
+        }
+
+        function disableTiles() {
+            tiles.forEach(tile => tile.classList.add('disabled'));
+        }
+
+        function updateStatus(message, textClass = 'text-slate-300') {
+            statusText.textContent = message;
+            statusText.className = `font-semibold text-xs md:text-sm ${textClass} tracking-wide`;
+        }
+
+        /**
+         * Tile Input Processing
+         */
+        function handleTileClick(e) {
+            if (!state.isPlaying || state.isDemonstrating) return;
+            initAudio();
+            triggerHaptic();
+
+            const clickedIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+            const expectedIndex = state.sequence[state.playerInputIndex];
+
+            if (clickedIndex === expectedIndex) {
+                highlightTile(clickedIndex, 240);
+                state.playerInputIndex++;
+                currentStepDisplay.textContent = state.playerInputIndex;
+
+                if (state.playerInputIndex === state.sequence.length) {
+                    handleVictory();
+                }
+            } else {
+                handleMistake();
+            }
+        }
+
+        /**
+         * Handle Retry / Mistake
+         */
+        function handleMistake() {
+            state.attempts++;
+            attemptsDisplay.textContent = state.attempts;
+            state.mistakesHistory.push(state.playerInputIndex);
+            
+            playErrorSound();
+
+            gridContainer.classList.add('shake-grid');
+            setTimeout(() => gridContainer.classList.remove('shake-grid'), 400);
+
+            updateStatus('Incorrect tile! Pattern resetting...', 'text-cyber-danger');
+            
+            disableTiles();
+            setTimeout(() => {
+                if (state.isPlaying) {
+                    playSequence();
+                }
+            }, 900);
+        }
+
+        /**
+         * Victory Handler
+         */
+        function handleVictory() {
+            stopTimer();
+            state.isPlaying = false;
+            disableTiles();
+            playVictorySound();
+
+            const timeMs = state.elapsedTime;
+            const retries = state.attempts;
+
+            if (state.mode === 'DAILY') {
+                const lastDate = state.stats.lastCompletedDate;
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+
+                if (lastDate === yesterdayStr) {
+                    state.stats.streak += 1;
+                } else if (lastDate !== state.todayDateStr) {
+                    state.stats.streak = 1;
+                }
+
+                if (state.stats.streak > state.stats.maxStreak) {
+                    state.stats.maxStreak = state.stats.streak;
+                }
+
+                state.stats.played += 1;
+                state.stats.lastCompletedDate = state.todayDateStr;
+
+                if (!state.stats.bestTimeMs || timeMs < state.stats.bestTimeMs) {
+                    state.stats.bestTimeMs = timeMs;
+                }
+
+                saveStats();
+                saveCompletedDaily(state.todayDateStr, { timeMs, retries });
+                updateStreakAndBestUI();
+
+                modalTitle.textContent = "REPEATLE CLEARED!";
+                modalSub.textContent = `Daily Repeatle #${state.dailyNumber} Completed`;
+                modalStreakRow.classList.remove('hidden');
+                modalStreakVal.textContent = state.stats.streak;
+            } else {
+                modalTitle.textContent = "PRACTICE CLEARED!";
+                modalSub.textContent = "Practice Sequence Completed";
+                modalStreakRow.classList.add('hidden');
+            }
+
+            modalFinalTime.textContent = formatTime(timeMs);
+            modalAttempts.textContent = retries;
+
+            setTimeout(() => {
+                victoryModal.classList.remove('opacity-0', 'pointer-events-none');
+                victoryContent.classList.remove('scale-95');
+                victoryContent.classList.add('scale-100');
+            }, 350);
+
+            startBtn.textContent = state.mode === 'DAILY' ? 'DAILY COMPLETED ✔' : 'START PRACTICE';
+            if (state.mode === 'DAILY') {
+                startBtn.classList.remove('from-cyber-emerald', 'via-cyber-accent', 'to-cyber-emerald');
+                startBtn.classList.add('bg-slate-800', 'text-slate-400', 'pointer-events-none', 'shadow-none');
+            }
+            repeatBtn.classList.add('hidden');
+        }
+
+        /**
+         * Start Game Workflow
+         */
+        function startGame() {
+            initAudio();
+
+            state.isPlaying = true;
+            state.attempts = 0;
+            state.mistakesHistory = [];
+            attemptsDisplay.textContent = '0';
+            currentStepDisplay.textContent = '0';
+
+            if (state.mode === 'DAILY') {
+                state.sequence = generateDailySequence(state.todayDateStr);
+            } else {
+                state.sequence = generatePracticeSequence();
+            }
+
+            resetTimer();
+            startTimer();
+
+            startBtn.textContent = 'RESTART';
+            playSequence();
+        }
+
+        /**
+         * Generate Emoji Share Text Output
+         */
+        function generateEmojiShare() {
+            const timeSeconds = (state.elapsedTime / 1000).toFixed(1);
+            let shareText = '';
+
+            if (state.mode === 'DAILY') {
+                shareText += `Repeatle #${state.dailyNumber} 🧠⚡\n`;
+            } else {
+                shareText += `Repeatle Practice 🧠⚡\n`;
+            }
+
+            shareText += `⏱️ Time: ${timeSeconds}s\n`;
+            shareText += `❌ Retries: ${state.attempts}\n`;
+
+            if (state.mode === 'DAILY') {
+                shareText += `🔥 Streak: ${state.stats.streak} day${state.stats.streak > 1 ? 's' : ''}\n`;
+            }
+
+            // Build Step-by-step Emojis
+            let emojiPattern = '';
+            for (let i = 0; i < CONFIG.SEQUENCE_LENGTH; i++) {
+                if (state.mistakesHistory.includes(i)) {
+                    emojiPattern += '🟨';
+                } else {
+                    emojiPattern += '🟩';
+                }
+            }
+            shareText += `${emojiPattern}\n`;
+
+            const currentUrl = window.location.href.startsWith('http') ? window.location.href : 'https://repeatle.game';
+            shareText += `Play Repeatle: ${currentUrl}`;
+
+            return shareText;
+        }
+
+        /**
+         * WhatsApp Direct Share
+         */
+        function shareToWhatsApp() {
+            const textToShare = generateEmojiShare();
+            const encodedText = encodeURIComponent(textToShare);
+            const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+
+            window.open(whatsappUrl, '_blank');
+            showToast('Opening WhatsApp...');
+        }
+
+        function copyShareResults() {
+            const textToCopy = generateEmojiShare();
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => showToast('Copied to clipboard!'))
+                    .catch(() => fallbackCopy(textToCopy));
+            } else {
+                fallbackCopy(textToCopy);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Copied to clipboard!');
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(msg = 'Copied to clipboard!') {
+            toastMsg.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('animate-toast');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+                toast.classList.remove('animate-toast');
+            }, 2400);
+        }
+
+        /**
+         * Mode Switcher
+         */
+        function toggleMode(targetMode) {
+            state.mode = targetMode;
+            resetTimer();
+            state.isPlaying = false;
+            disableTiles();
+
+            if (state.mode === 'PRACTICE') {
+                modeBadge.textContent = 'PRACTICE MODE';
+                modeBadge.className = 'text-[11px] font-orbitron font-bold px-2.5 py-1 rounded-lg bg-cyber-violet/20 border border-cyber-violet/40 text-cyber-violet';
+                practiceToggleBtn.textContent = 'Switch to Daily Repeatle';
+                startBtn.textContent = 'START PRACTICE';
+                startBtn.className = 'w-full py-3.5 rounded-xl font-orbitron font-bold text-base tracking-widest text-slate-950 bg-gradient-to-r from-cyber-emerald via-cyber-accent to-cyber-emerald hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-cyber-emerald/20';
+                updateStatus('Practice Mode: Unlimited random sequences', 'text-slate-300');
+            } else {
+                modeBadge.innerHTML = `DAILY #<span id="dailyNumTag">${state.dailyNumber}</span>`;
+                modeBadge.className = 'text-[11px] font-orbitron font-bold px-2.5 py-1 rounded-lg bg-cyber-emerald/15 border border-cyber-emerald/40 text-cyber-emerald';
+                practiceToggleBtn.textContent = 'Switch to Practice Mode';
+                startBtn.textContent = 'START REPEATLE';
+                checkDailyStatus();
+            }
+        }
+
+        /**
+         * Event Listeners
+         */
+        startBtn.addEventListener('click', () => {
+            if (state.mode === 'DAILY' && state.completedDailies[state.todayDateStr]) return;
+            startGame();
+        });
+
+        repeatBtn.addEventListener('click', () => {
+            if (state.isPlaying && !state.isDemonstrating) {
+                playSequence();
+            }
+        });
+
+        tiles.forEach(tile => {
+            tile.addEventListener('click', handleTileClick);
+        });
+
+        practiceToggleBtn.addEventListener('click', () => {
+            toggleMode(state.mode === 'DAILY' ? 'PRACTICE' : 'DAILY');
+        });
+
+        whatsappShareBtn.addEventListener('click', shareToWhatsApp);
+        shareBtn.addEventListener('click', copyShareResults);
+
+        modalPracticeBtn.addEventListener('click', () => {
+            victoryModal.classList.add('opacity-0', 'pointer-events-none');
+            victoryContent.classList.remove('scale-100');
+            victoryContent.classList.add('scale-95');
+            toggleMode('PRACTICE');
+        });
+
+        statsToggle.addEventListener('click', () => {
+            statsModal.classList.remove('opacity-0', 'pointer-events-none');
+        });
+
+        closeStatsBtn.addEventListener('click', () => {
+            statsModal.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        infoToggleBtn.addEventListener('click', () => {
+            infoModal.classList.remove('opacity-0', 'pointer-events-none');
+        });
+
+        closeInfoBtn.addEventListener('click', () => {
+            infoModal.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        gotItBtn.addEventListener('click', () => {
+            infoModal.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        soundToggle.addEventListener('click', () => {
+            state.isMuted = !state.isMuted;
+            if (state.isMuted) {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-high text-cyber-accent';
+            }
+        });
+
+        // Touch latency fix for mobile browser viewports
+        gridContainer.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('grid-tile')) {
+                e.preventDefault();
+                e.target.click();
+            }
+        }, { passive: false });
+
+        // On Window Load Init
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
